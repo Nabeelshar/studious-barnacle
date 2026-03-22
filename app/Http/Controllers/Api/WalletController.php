@@ -169,7 +169,7 @@ class WalletController extends Controller
 
             CoinTransaction::create([
                 'user_id'     => $user->id,
-                'type'        => 'gift',
+                'type'        => 'spend',
                 'amount'      => $coins,
                 'novel_id'    => $data['novel_id'],
                 'description' => "Gift to novel #{$data['novel_id']}",
