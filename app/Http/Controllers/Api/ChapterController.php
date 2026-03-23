@@ -9,15 +9,32 @@ use Illuminate\Http\Request;
 
 class ChapterController extends Controller
 {
-    public function index(Novel $novel)
+    public function index(Novel $novel, Request $request)
     {
-        return response()->json(
-            $novel->chapters()
-                ->where('status', 'published')
-                ->orderBy('number')
-                ->get(['id', 'novel_id', 'number', 'title', 'word_count', 'is_locked', 'coin_price',
-                       'is_early_access', 'is_wait_free', 'published_at', 'views', 'status'])
-        );
+        $chapters = $novel->chapters()
+            ->where('status', 'published')
+            ->orderBy('number')
+            ->get(['id', 'novel_id', 'number', 'title', 'word_count', 'is_locked', 'coin_price',
+                   'is_early_access', 'is_wait_free', 'published_at', 'views', 'status']);
+
+        $user = $request->user();
+        if ($user) {
+            $unlockedIds = \DB::table('user_chapter_unlocks')
+                ->where('user_id', $user->id)
+                ->whereIn('chapter_id', $chapters->pluck('id'))
+                ->pluck('chapter_id')
+                ->toArray();
+            $unlockedSet = array_flip($unlockedIds);
+            foreach ($chapters as $ch) {
+                $ch->is_unlocked = isset($unlockedSet[$ch->id]);
+            }
+        } else {
+            foreach ($chapters as $ch) {
+                $ch->is_unlocked = false;
+            }
+        }
+
+        return response()->json($chapters);
     }
 
     /** Free preview — strips content for locked chapters */
